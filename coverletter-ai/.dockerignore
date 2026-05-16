@@ -1,0 +1,15 @@
+coverletter-ai/node_modules
+coverletter-ai/dist
+**/__pycache__
+**/*.pyc
+**/*.pyo
+*.db
+.env
+.git
+.gitignore
+*.md
+repo_part1.txt
+repo_part2.txt
+repo_part3.txt
+repo_part4.txt
+repo_tree.txt

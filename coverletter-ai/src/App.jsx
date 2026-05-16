@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { generateLetter, getHistory } from "./api";
 import ChatMessage from "./components/ChatMessage";
 import InputBar from "./components/InputBar";
@@ -9,7 +9,11 @@ export default function App() {
   const endRef = useRef(null);
 
   useEffect(() => {
-    getHistory().then(setMessages);
+    getHistory().then((history) => {
+      if (Array.isArray(history) && history.length > 0) {
+        setMessages(history);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -20,14 +24,27 @@ export default function App() {
     const formData = new FormData();
     formData.append("message", text);
     if (files.cv) formData.append("cv", files.cv);
+    if (files.jd) formData.append("jd", files.jd);
 
-    if (text) {
-      setMessages((m) => [...m, { role: "user", content: text }]);
+    if (text.trim()) {
+      setMessages((prev) => [...prev, { role: "user", content: text }]);
     }
 
-    const res = await generateLetter(formData);
-
-    setMessages((m) => [...m, { role: "assistant", content: res.letter }]);
+    try {
+      const res = await generateLetter(formData);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: res.letter },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "⚠ Something went wrong. Please try again.",
+        },
+      ]);
+    }
   };
 
   return (
@@ -38,12 +55,15 @@ export default function App() {
         {messages.length === 0 && (
           <ChatMessage
             role="assistant"
-            content="👋 Welcome! Upload your CV or paste a Job Description to generate a professional cover letter."
+            content={
+              "👋 Welcome! Upload your CV and a Job Description to generate a tailored cover letter.\n\n" +
+              "You can upload PDF, DOCX, or TXT files — or just paste the job description as text."
+            }
           />
         )}
 
         {messages.map((m, i) => (
-          <ChatMessage key={i} {...m} />
+          <ChatMessage key={i} role={m.role} content={m.content} />
         ))}
 
         <div ref={endRef} />

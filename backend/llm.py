@@ -1,47 +1,54 @@
-# llm.py
 import os
+
 import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
+SYSTEM_PROMPT = (
+    "You are a professional career coach who writes cover letters.\n\n"
+    "Rules you must follow without exception:\n"
+    "- Output only the cover letter text. No commentary, no explanations.\n"
+    "- Start directly with the salutation or a header — never with 'Here is' or similar.\n"
+    "- Write in clean, formal business English using proper paragraphs.\n"
+    "- Do not mention AI, ATS systems, or that this was generated.\n"
+    "- Match the tone and seniority level implied by the CV and job description.\n"
+)
+
+
 def generate_cover_letter(prompt: str) -> str:
-    headers = {
-        "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
-        "Content-Type": "application/json",
-    }
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    if not api_key:
+        return "⚠ OPENROUTER_API_KEY is not set. Please check your .env file."
 
-    payload = {
-        "model": os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3-8b-instruct"),
-        "temperature": 0.4,
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "You are a professional human career coach.\n\n"
-                    "Write a REAL cover letter exactly as a human would send it.\n\n"
-                    "ABSOLUTE RULES (MUST FOLLOW):\n"
-                    "- Do NOT write any introductory or explanatory sentences.\n"
-                    "- Do NOT say 'Here is', 'Below is', 'ATS-friendly', or similar.\n"
-                    "- Start DIRECTLY with a header or 'Dear Hiring Manager,'.\n"
-                    "- Write in clean business English with proper paragraphs.\n"
-                    "- Output ONLY the letter text.\n"
-                    "- Do NOT mention AI, ATS, or generation.\n"
-                )
+    model = os.getenv("OPENROUTER_MODEL", "minimax/minimax-m2.5")
+
+    try:
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
-            {"role": "user", "content": prompt}
-        ],
-    }
+            json={
+                "model": model,
+                "temperature": 0.4,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt},
+                ],
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except requests.exceptions.Timeout:
+        return "⚠ The request timed out. Please try again."
+    except requests.exceptions.RequestException as e:
+        return f"⚠ Network error: {e}"
 
-    res = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers=headers,
-        json=payload,
-        timeout=60
-    )
-
-    data = res.json()
     if "choices" not in data:
-        return "⚠ Failed to generate cover letter. Please try again."
+        error_msg = data.get("error", {}).get("message", "Unknown error")
+        return f"⚠ API error: {error_msg}"
 
     return data["choices"][0]["message"]["content"].strip()

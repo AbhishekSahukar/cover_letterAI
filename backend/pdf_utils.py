@@ -1,9 +1,12 @@
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
-def generate_pdf(text: str, filename="cover_letter.pdf"):
+OUTPUT_PATH = "cover_letter.pdf"
+
+
+def generate_pdf(text: str, filename: str = OUTPUT_PATH) -> str:
     doc = SimpleDocTemplate(
         filename,
         pagesize=A4,
@@ -14,23 +17,20 @@ def generate_pdf(text: str, filename="cover_letter.pdf"):
     )
 
     styles = getSampleStyleSheet()
-
     letter_style = ParagraphStyle(
         "Letter",
         parent=styles["Normal"],
         fontSize=11,
         leading=16,
-        spaceAfter=12,
+        spaceAfter=10,
     )
 
     story = []
-
-    # Split by blank lines → proper paragraphs
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-
-    for para in paragraphs:
-        story.append(Paragraph(para.replace("\n", "<br />"), letter_style))
-        story.append(Spacer(1, 12))
+    for para in text.split("\n\n"):
+        para = para.strip()
+        if para:
+            story.append(Paragraph(para.replace("\n", "<br />"), letter_style))
+            story.append(Spacer(1, 10))
 
     doc.build(story)
     return filename

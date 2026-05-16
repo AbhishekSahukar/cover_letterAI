@@ -2,8 +2,7 @@ import { downloadPDF } from "../api";
 
 export default function ChatMessage({ role, content }) {
   const isError =
-    content.startsWith("⚠") ||
-    content.startsWith("Failed to generate");
+    content.startsWith("⚠") || content.startsWith("Failed to generate");
 
   const isCoverLetter =
     role === "assistant" && !isError && !content.startsWith("👋");
@@ -14,10 +13,7 @@ export default function ChatMessage({ role, content }) {
         <pre>{content}</pre>
 
         {isCoverLetter && (
-          <button
-            className="download-btn"
-            onClick={() => downloadPDF(content)}
-          >
+          <button className="download-btn" onClick={() => downloadPDF(content)}>
             ⬇ Download PDF
           </button>
         )}
